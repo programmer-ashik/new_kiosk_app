@@ -1,23 +1,28 @@
-import axios from 'axios';
+import { fetch } from 'expo/fetch';
 import React, { useEffect, useState } from 'react';
 import { Dimensions, Image, Text, View } from 'react-native';
 import AutoScrollText from './components/AutoScrollText';
 import DateTime from './components/DateTime';
 import Carousel from './components/SliderCaresole';
 import VideoPlayer from './components/VideoPlayer';
-
 const Home = () => {
     const [isLoading, setIsLoading] = useState(true);
     const { width: screenWidth } = Dimensions.get('window');
     const [sliderData, setSliderData] = useState(null);
+    const [error, setError] = useState('')
     const BASE_URL = "http://103.107.184.80:3000";
 
     useEffect(() => {
         const fetchSliderData = async () => {
             try {
-                const response = await axios.get(`${BASE_URL}/api/slider_images`);
-                if (response.data.success) {
-                    setSliderData(response.data.data);
+                // Fetch data from the API
+                const resp = await fetch(`${BASE_URL}/api/slider_images`);
+                const data = await resp.json(); // Parse the response as JSON
+                if (data.success) {
+                    setSliderData(data.data); // Set the slider data only if the API call was successful
+                } else {
+                    setError("API call failed:", data.message)
+                    console.error("API call failed:", data.message);
                 }
             } catch (error) {
                 console.error("Error fetching data:", error);
@@ -27,14 +32,16 @@ const Home = () => {
         };
 
         fetchSliderData();
-        const intervalId = setInterval(fetchSliderData, 10000);
-        return () => clearInterval(intervalId);
+        const intervalId = setInterval(fetchSliderData, 10000); // Refresh data every 10 seconds
+        return () => clearInterval(intervalId); // Cleanup interval on unmount
     }, []);
-
+    console.log(sliderData, ' this is slider data');
     if (isLoading || !sliderData) {
         return <Text>Loading</Text>;
     }
-
+    if (error) {
+        return <Text>{error}</Text>
+    }
     const formattedSliderImages = sliderData.sliderImages.map(imagePath => `${BASE_URL}/${imagePath}`);
 
     return (
